@@ -37,7 +37,12 @@ public class Parser {
                 for (int i = 0; i < email.length(); i++) {
                     char c = email.charAt(i);
                     int charClass = getCharClass(c);
-                    int state = automata.nextState(charClass);
+                    int state;
+                    if (charClass != -1) {
+                        state = automata.nextState(charClass);
+                    } else {
+                        state = -1;
+                    }
 
                     //If return -1, email is invalid
                     if (state == -1) {
