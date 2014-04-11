@@ -50,7 +50,7 @@ public class Parser {
                     }
 
                     //If return 9, email is valid
-                    if (state == 9) {
+                    if (state == 10) {
                         results.set(results.size() - 1, true);
                     }
                 }
