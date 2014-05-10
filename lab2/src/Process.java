@@ -1,15 +1,17 @@
+import java.util.ArrayList;
+import java.util.Iterator;
+
 /**
- * Created by troshchuk on 08.05.14.
+ * Created by troshchuk on 10.05.14.
  */
 public class Process {
-    /** memory in Kb */
-    private int memory;
+    private VirtualAddressSpace virtualAddressSpace;
 
-    public Process(int memory) {
-        this.memory = memory;
+    public Process(Program program) {
+        virtualAddressSpace = new VirtualAddressSpace(program.getMemory());
     }
 
-    public int getMemory() {
-        return memory;
+    public VirtualAddressSpace getVirtualAddressSpace() {
+        return virtualAddressSpace;
     }
 }

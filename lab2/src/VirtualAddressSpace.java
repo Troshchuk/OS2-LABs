@@ -5,9 +5,8 @@ public class VirtualAddressSpace {
     private VirtualPages head;
     private int length;
 
-    public VirtualAddressSpace(Process process) {
+    public VirtualAddressSpace(int memory) {
         VirtualPages virtualPages = new VirtualPages();
-        int memory = process.getMemory();
 
         length = memory / Page.memory;
 

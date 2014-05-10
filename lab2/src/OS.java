@@ -1,86 +1,68 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Created by troshchuk on 08.05.14.
  */
 public class OS {
     private RAM ram;
-    private ArrayList<VirtualAddressSpace> virtualAddressSpaces;
     private MMU mmu;
+    private ArrayList<Process> processes;
 
     public OS(RAM ram) {
         this.ram = ram;
         mmu = new MMU(ram);
-        virtualAddressSpaces = new ArrayList<VirtualAddressSpace>();
+        processes = new ArrayList<Process>();
     }
 
     public void run() {
-        mmu.checkHandled();
-    }
+        try (BufferedWriter out = new BufferedWriter(new FileWriter("file.txt"))) {
+            for (int j = 0; j < 500; j++) {
+                mmu.checkHandled();
+                out.write("Set handled 0\n");
 
-    public void runProcess(Process process) {
-        final VirtualAddressSpace virtualAddressSpace = new VirtualAddressSpace(process);
-        if (ram.isFreeSpace()) {
-            virtualAddressSpaces.add(virtualAddressSpace);
-            final int processIndex = virtualAddressSpaces.indexOf(virtualAddressSpace);
-            mmu.add(virtualAddressSpace, processIndex);
-            loadProcess(virtualAddressSpace);
+                for (int i = 0; i < 20; i++) {
+                    int readOrWrite = (int) (Math.random() * 2);
 
-            final int lifetimeProcess = (int) (Math.random() * 100);
+                    int process = (int) (Math.random() * (processes.size()));
+                    int command = (int) (Math.random() * 1024 * processes.get(process).getVirtualAddressSpace().getLength());
 
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (int i = 0; i < lifetimeProcess; i++) {
-                        int readOrWrite = (int) (Math.random() * 2);
-
-                        int command = (int) (Math.random() * 1024 * virtualAddressSpace.getLength());
-                        mmu.doCommand(processIndex, command, readOrWrite);
-
-                    }
-                    killProcess(virtualAddressSpace);
+                    mmu.doCommand(process, command, readOrWrite);
+                    out.write("Process " + process + " do command " + command + " Write " + readOrWrite + "\n");
+                    out.write(mmu.toString());
                 }
-            });
-
-            thread.start();
-
-
-        } else {
-            System.out.println("Process cannot be load to RAM. RAM is full");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    // Must be rewrite
-    public void loadProcess(VirtualAddressSpace virtualAddressSpace) {
-
-        int lengthPageBlocks = ram.getLength();
-        int lengthVirtualPages = virtualAddressSpace.getLength();
-
-        RAM.PageBlocks pageBlocks = ram.getPageBlocks();
-        VirtualAddressSpace.VirtualPages virtualPages = virtualAddressSpace.getVirtualPages();
-
-        int usedLength = ram.getUsedLength();
-
-        for (int i = 0; i < usedLength; i++) {
-            pageBlocks = pageBlocks.next;
-        }
-
-        for (int i = usedLength, j = 0; j < lengthVirtualPages && i < lengthPageBlocks; i++, j++) {
-            pageBlocks.page = virtualPages.page;
-
-            pageBlocks = pageBlocks.next;
-            virtualPages = virtualPages.next;
-
-            mmu.copyToRam(virtualAddressSpaces.indexOf(virtualAddressSpace), i - usedLength, i);
-
-            ram.incrementUsed();
-            ram.setFreeBlock(i, false);
+    public void addProgram(Program program) {
+        if (!mmu.addProgramToHardDrive(program)) {
+            System.out.println("Not enough memory on the hard drive");
         }
     }
 
-    public void killProcess(VirtualAddressSpace virtualAddressSpace) {
-        mmu.removeProcess(virtualAddressSpaces.indexOf(virtualAddressSpace));
+    public void runPrograms() {
+        int numberOfPrograms = mmu.getNumberOfPrograms();
 
+        for (int i = 0; i < numberOfPrograms; i++) {
+            if (ram.isFreeSpace()) {
+                Process process = createProcess(i);
+                processes.add(process);
+            }
+        }
+    }
 
+    private Process createProcess(int program) {
+        return mmu.loadProgramToRam(program);
+    }
+
+    public void killProcess(Process process) {
+        mmu.removeProcess(processes.indexOf(process));
     }
 }
