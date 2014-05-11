@@ -1,10 +1,18 @@
 /**
- * Created by troshchuk on 08.05.14.
+ * Virtual address space
+ *
+ * @author Dmytro Troshchuk
+ * @version 1.02 08.05.14
  */
 public class VirtualAddressSpace {
+    /** Head of virtual pages */
     private VirtualPages head;
+    /** Length virtual address space in virtual pages */
     private int length;
 
+    /**
+     * @param memory memory in Kb
+     */
     public VirtualAddressSpace(int memory) {
         VirtualPages virtualPages = new VirtualPages();
 
@@ -19,17 +27,23 @@ public class VirtualAddressSpace {
         }
     }
 
+    /**
+     * @return head of virtual pages
+     */
     public VirtualPages getVirtualPages() {
         return head;
     }
 
+    /**
+     * @return length virtual address space in virtual pages
+     */
     public int getLength() {
         return length;
     }
 
+    /** Class virtual pages */
     class VirtualPages {
         Page page;
-
         VirtualPages next;
     }
 }

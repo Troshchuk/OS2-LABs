@@ -1,5 +1,8 @@
 /**
- * Created by troshchuk on 08.05.14.
+ * Page
+ *
+ * @author Dmytro Troshchuk
+ * @version 1.02 08.05.14
  */
 public class Page {
     /** memory in Kb */

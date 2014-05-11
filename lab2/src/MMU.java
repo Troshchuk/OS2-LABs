@@ -1,28 +1,52 @@
-import com.sun.deploy.panel.ITreeNode;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
  * Memory Management Unit
- * Created by troshchuk on 08.05.14.
+ *
+ * @author Dmytro Troshchuk
+ * @version 1.02 08.05.14
  */
 public class MMU {
-    private RAM ram;
-    private CPU cpu;
-    private ArrayList<Table> table;
-    private ArrayList<Integer> processIndex;
-    private HardDrive hardDrive;
+    /**
+     * RAM
+     */
+    private final RAM ram;
+    /**
+     * CPU
+     */
+    private final CPU cpu;
+    /**
+     * Table of all process
+     */
+    private final ArrayList<Table> table;
+    /**
+     * Show process position on the table
+     */
+    private final ArrayList<Integer> processIndex;
+    /**
+     * Hard drive
+     */
+    private final HardDrive hardDrive;
 
+    /**
+     * @param ram RAM
+     */
     public MMU(RAM ram) {
         this.ram = ram;
-        table = new ArrayList<Table>();
-        processIndex = new ArrayList<Integer>();
+        table = new ArrayList<>();
+        processIndex = new ArrayList<>();
         cpu = new CPU();
         hardDrive = new HardDrive();
     }
 
-    public void add(VirtualAddressSpace virtualAddressSpace, int process) {
+    /**
+     * Add information of process to the table
+     *
+     * @param virtualAddressSpace virtual address space of process
+     * @param process             number of process
+     */
+    private void add(VirtualAddressSpace virtualAddressSpace, int process) {
         int length = virtualAddressSpace.getLength();
         processIndex.add(table.size());
         for (int i = 0; i < length; i++) {
@@ -31,29 +55,45 @@ public class MMU {
             t.virtualPage = i;
             table.add(t);
         }
-
     }
 
-    public synchronized boolean addProgramToHardDrive(Program program) {
+    /**
+     * Add program to hard drive
+     *
+     * @param program program
+     * @return result of adding
+     */
+    public boolean addProgramToHardDrive(Program program) {
         return hardDrive.addProgram(program);
     }
 
+    /**
+     * @return number of programs on the hard drive
+     */
     public int getNumberOfPrograms() {
         return hardDrive.getNumberOfPrograms();
     }
 
+    /**
+     * Load program to RAM
+     *
+     * @param program number of program
+     * @return created process
+     */
     public Process loadProgramToRam(int program) {
         Process process = new Process(hardDrive.getProgram(program));
 
         add(process.getVirtualAddressSpace(), program);
 
-        VirtualAddressSpace virtualAddressSpace = process.getVirtualAddressSpace();
+        VirtualAddressSpace virtualAddressSpace =
+                process.getVirtualAddressSpace();
 
         int lengthPageBlocks = ram.getLength();
         int lengthVirtualPages = virtualAddressSpace.getLength();
 
         RAM.PageBlocks pageBlocks = ram.getPageBlocks();
-        VirtualAddressSpace.VirtualPages virtualPages = virtualAddressSpace.getVirtualPages();
+        VirtualAddressSpace.VirtualPages virtualPages =
+                virtualAddressSpace.getVirtualPages();
 
         int usedLength = ram.getUsedLength();
 
@@ -61,13 +101,15 @@ public class MMU {
             pageBlocks = pageBlocks.next;
         }
 
-        for (int i = usedLength, j = 0; j < lengthVirtualPages && i < lengthPageBlocks; i++, j++) {
+        for (int i = usedLength, j = 0;
+             j < lengthVirtualPages && i < lengthPageBlocks; i++, j++) {
+
             pageBlocks.page = virtualPages.page;
 
             pageBlocks = pageBlocks.next;
             virtualPages = virtualPages.next;
 
-            copyToRam(program, i - usedLength, i);
+            editTable(program, i - usedLength, i);
 
             ram.incrementUsed();
             ram.setFreeBlock(i, false);
@@ -75,16 +117,25 @@ public class MMU {
         return process;
     }
 
-    public void copyToRam(int process, int virtualPage, int virtualBlock) {
+    /**
+     * Set that process is involved and set which virtual block involved
+     *
+     * @param process      number of process
+     * @param virtualPage  number of virtual page
+     * @param virtualBlock number of virtual block
+     */
+    private void editTable(int process, int virtualPage, int virtualBlock) {
         Table t = table.get(virtualPage + processIndex.get(process));
         t.involved = true;
         t.virtualBlock = virtualBlock;
     }
 
+    /**
+     * Remove process
+     *
+     * @param process number of process
+     */
     public void removeProcess(int process) {
-        int index = processIndex.get(process);
-        ArrayList<Integer> list = new ArrayList<Integer>();
-
         Iterator<Table> itr = table.listIterator(process);
         while (itr.hasNext()) {
             Table t = itr.next();
@@ -100,25 +151,26 @@ public class MMU {
         }
     }
 
+    /**
+     * Set bit handled 0 to all process in the table
+     */
     public void checkHandled() {
-
         int length = table.size();
 
-
-        for (int i = 0; i < length; i++) {
-            if (table.get(i).involved && table.get(i).handled) {
-                table.get(i).handled = false;
+        for (Table row : table) {
+            if (row.involved && row.handled) {
+                row.handled = false;
             }
         }
-
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
     }
 
+    /**
+     * Do command of process
+     *
+     * @param process number of process
+     * @param command command
+     * @param readOrWrite read 0 write 1
+     */
     public void doCommand(int process, int command, int readOrWrite) {
         int virtualPage = command / 1024;
 
@@ -164,14 +216,18 @@ public class MMU {
         }
     }
 
-
+    /**
+     * NRU algorithm
+     *
+     * @param process number of process
+     * @param virtualPage number of virtual page
+     * @param readOrWrite read 0 write 1
+     */
     private void NRU(int process, int virtualPage, int readOrWrite) {
         int length = table.size();
         int low = 3;
-        ArrayList<Integer> classes = new ArrayList<Integer>();
-        for (int i = 0; i < length; i++) {
-            Table t = table.get(i);
-
+        ArrayList<Integer> classes = new ArrayList<>();
+        for (Table t : table) {
             if (t.involved) {
                 if (!t.handled) {
                     if (!t.changed) {
@@ -235,11 +291,15 @@ public class MMU {
 
     }
 
+    /**
+     * For log
+     *
+     * @return table
+     */
     public String toString() {
         int length = table.size();
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            Table t = table.get(i);
+        for (Table t : table) {
             sb.append(t.toString());
         }
         sb.append("\n");
@@ -247,7 +307,9 @@ public class MMU {
         return sb.toString();
     }
 
-
+    /**
+     * Class table
+     */
     class Table {
         boolean involved;
         int process;
@@ -258,7 +320,9 @@ public class MMU {
         int virtualBlock;
 
         public String toString() {
-            return Boolean.toString(involved) + " " + process + " " + virtualPage + " " + handled + " " + changed + " " + defended + " " + virtualBlock + "\n";
+            return Boolean.toString(involved) + " " + process + " " +
+                   virtualPage + " " + handled + " " + changed + " " +
+                   defended + " " + virtualBlock + "\n";
         }
     }
 

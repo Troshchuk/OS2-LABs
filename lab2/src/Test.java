@@ -1,3 +1,9 @@
+/**
+ * Test NRU algorithm
+ *
+ * @author Dmytro Troshchuk
+ * @version 1.02 08.05.14
+ */
 public class Test {
     public static void main(String[] args) {
         RAM ram = new RAM(64);
