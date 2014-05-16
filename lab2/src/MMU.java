@@ -325,6 +325,4 @@ public class MMU {
                    defended + " " + virtualBlock + "\n";
         }
     }
-
-
 }

@@ -66,6 +66,7 @@ public class OS {
 
                 if (j < processes.size()) {
                     killProcess(processes.get(j));
+                    out.write("Process " + j + " was killed\n");
                 }
             }
         } catch (IOException | InterruptedException e) {
